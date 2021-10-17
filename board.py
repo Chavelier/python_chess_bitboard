@@ -22,6 +22,17 @@ class Board:
     ex: case E4 a comme id 36 et comme représentation en bitboard 2**36
     """
 
+    coord = [
+    'a8','b8','c8','d8','e8','f8','g8','h8',
+    'a7','b7','c7','d7','e7','f7','g7','h7',
+    'a6','b6','c6','d6','e6','f6','g6','h6',
+    'a5','b5','c5','d5','e5','f5','g5','h5',
+    'a4','b4','c4','d4','e4','f4','g4','h4',
+    'a3','b3','c3','d3','e3','f3','g3','h3',
+    'a2','b2','c2','d2','e2','f2','g2','h2',
+    'a1','b1','c1','d1','e1','f1','g1','h1'
+    ]
+
 
     def __init__(self):
         self.init()
@@ -67,9 +78,8 @@ class Board:
         renvoi l'etat actuel de la case du bitboard """
         return self.get_bit(bitboard,case) != 0
 
-    # -------------------------------------------------------------------------------------------------
 
-
+    # affichage debug ------------------------------------------------------------------------------------
 
     def print_bb(self,bitboard):
         for i in range(8):
@@ -81,5 +91,5 @@ class Board:
         print("\n    a b c d e f g h\n")
 
 
-B = Board()
-B.print_bb(B.pop_bit(B.Pw,54))
+
+    # ATTAQUES DES PIECES ###############################################################################
