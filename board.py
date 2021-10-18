@@ -4,7 +4,6 @@ U64 = np.uint64 #type utilise pour representer le bitboard (entier de 64 bit non
 class Board:
     """gere tout l'echequier, les pieces, les coups,..."""
 
-    # U64 = U64(2**63)
     """
     bitboard echequier representation :
 
@@ -33,11 +32,24 @@ class Board:
     'a1','b1','c1','d1','e1','f1','g1','h1'
     ]
 
+    #constantes
+    a_file = U64(72340172838076673)
+    b_file = U64(144680345676153346)
+    g_file = U64(4629771061636907072)
+    h_file = U64(9259542123273814144)
+    not_a_file = ~a_file
+    not_h_file = ~h_file
+    not_ab_file = ~(a_file | b_file)
+    not_gh_file = ~(g_file | h_file)
+
 
     def __init__(self):
         self.init()
 
     def init(self):
+
+        self.side = False #False = blanc, True = noir
+
         self.Pw = U64(71776119061217280)
         self.Kw = U64(2**60)
         self.Qw = U64(2**59)
@@ -51,8 +63,10 @@ class Board:
         self.Nb = U64(2**1+2**6)
         self.Bb = U64(2**2+2**5)
 
-        self.bb_white = self.Pw | self.Kw | self.Qw | self.Bw | self.Rw | self.Nw
-        self.bb_black = self.Pb | self.Kb | self.Qb | self.Bb | self.Rb | self.Nb
+        # self.bb_white = self.Pw | self.Kw | self.Qw | self.Bw | self.Rw | self.Nw
+        # self.bb_black = self.Pb | self.Kb | self.Qb | self.Bb | self.Rb | self.Nb
+        self.init_leaper_attack()
+
 
 
     # fonctions sur les bits -----------------------------------------------------------------------
@@ -79,11 +93,14 @@ class Board:
         return self.get_bit(bitboard,case) != 0
 
 
-    # affichage debug ------------------------------------------------------------------------------------
-
+    # affichage / debug ------------------------------------------------------------------------------------
+    def case_str2int(self,txt):
+        val = self.coord.index(txt)
+        return val
     def print_bb(self,bitboard):
+        print("val : %s \n"%bitboard)
         for i in range(8):
-            ligne = str(i+1)+"   "
+            ligne = str(8-i)+"   "
             for j in range(8):
                 txt = str(int(self.bit_state(bitboard,8*i+j)))
                 ligne += txt+" "
@@ -91,5 +108,26 @@ class Board:
         print("\n    a b c d e f g h\n")
 
 
+    # INITIALISATION DES ATTAQUES ###########################################################################
+
+    def init_leaper_attack(self):
+        self.pawn_attack = {}
+        for i in range(64):
+            self.pawn_attack['blanc'].append(self.mask_pawn_attack(i,False))
+            self.pawn_attack['noir'].append(self.mask_pawn_attack(i,True))
 
     # ATTAQUES DES PIECES ###############################################################################
+
+    def mask_pawn_attack(self,case,side):
+        """ int , bool -> U64
+        renvoi le bitboard de l'attaque du pion sur la case """
+
+        attack = U64(0)
+        bb = self.set_bit(U64(0),case) #position du pion en bitboard
+
+        if not side:
+            attack = ((bb & self.not_h_file) >> U64(7)) | ((bb & self.not_a_file) >> U64(9))
+        else:
+            attack = ((bb & self.not_a_file) << U64(7)) | ((bb & self.not_h_file) << U64(9))
+
+        return attack
