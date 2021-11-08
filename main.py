@@ -1,3 +1,11 @@
+"""
+Created on Mon Oct  12 09:31:03 2021
+
+@author: Corto Cristofoli
+
+MAIN
+"""
+
 from board import *
 
 B = Board()
@@ -18,9 +26,9 @@ atk_bb = B.mask_bishop_attack(B.case_str2int("e4"))
 #         v = B.set_bit(v,i*8+6)
 # B.print_bb(B.not_ab_file)
 
-for r in range(8):
-    line = ""
-    for f in range(8):
-        case = 8*r + f
-        line += str(B.count_bit(B.mask_rook_attack(case))) + ", "
-    print(line)
+
+for i in range(10000):
+    if i % 1000 == 0:
+        print(B.count_bit(generate_magic_number()))
+    else:
+        generate_magic_number()
