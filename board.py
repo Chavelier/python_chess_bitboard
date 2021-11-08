@@ -1,5 +1,14 @@
-import numpy as np
-U64 = np.uint64 #type utilise pour representer le bitboard (entier de 64 bit non signe)
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Oct  12 09:22:34 2021
+
+@author: Corto Cristofoli
+
+BOARD
+"""
+
+from random_generation import * #numpy est importé dedans
+
 
 class Board:
     """gere tout l'echequier, les pieces, les coups,..."""
@@ -311,9 +320,10 @@ class Board:
 
         return attack
 
-    # MAGIC bitboard function
 
-    def set_occupancies(self,index, bits_in_mask, attack_mask):
+    # MAGIC NUMBER ####################################################################
+
+    def set_occupancy(self,index, bits_in_mask, attack_mask):
         """pas encore trop compris ce que ça fait..."""
         occupancy = U64(0)
         attack_map = attack_mask
@@ -326,3 +336,21 @@ class Board:
                 occupancy = occupancy | (U64(1)<<U64(square))
 
         return occupancy
+    
+    def find_magic_number(self, square, relevant_bits, isbishop):
+        occupancies = [0 for i in range(4096)]
+        attacks = [0 for i in range(4096)]
+        
+        attack_mask = U64(0)
+        if isbishop : attack_mask = self.mask_bishop_attack(square)
+        else : attack_mask = self.mask_rook_attack(square)
+        
+        for i in range(1<<relevant_bits):
+            occupancies[i] = self.set_occupancy(i, relevant_bits, attack_mask)
+            
+            if isbishop:
+                attacks[i] = self.bishop_attack_on_the_fly(square, occupancies[i])
+            else:
+                attacks[i] = self.rook_attack_on_the_fly(square, occupancies[i])
+        
+            
