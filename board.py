@@ -123,6 +123,12 @@ class Board:
         return bitboard & (U64(1) << U64(case))
 
     @staticmethod
+    def mult_bb(bb1,bb2):
+        """ U64, U64 -> U64
+        multiplie 2 bitboards qui seraient trop grand """
+        return U64( (int(bb1) * int(bb2)) & (2**64 - 1) )
+
+    @staticmethod
     def count_bit(bitboard):  # verifier efficacite (static inline equivalent)
         """ U64 -> int
         renvoi le nombre de bit du bitboard """  # TODO: on peut ameliorer la fonction
@@ -338,7 +344,8 @@ class Board:
     # MAGIC NUMBER ####################################################################
 
     def set_occupancy(self, index, bits_in_mask, attack_mask):
-        """pas encore trop compris ce que ça fait..."""
+        """ renvoi l'occupance possible des cases 
+        présentent dans \"attack_mask\" """
         occupancy = U64(0)
         attack_map = attack_mask
 
@@ -354,6 +361,7 @@ class Board:
 
 
     def find_magic_number(self, square, relevant_bits, isbishop):
+        """ génère un magic number correct par force brute"""
         occupancies = [0 for i in range(4096)]
         attacks = [0 for i in range(4096)]
 
@@ -381,7 +389,7 @@ class Board:
             magic_number = generate_magic_number()
 
             # on passe les mauvais magic number sûr
-            if self.count_bit(U64(int(attack_mask) * int(magic_number)) & U64(71776119061217280)) < 6:
+            if self.count_bit(Board.mult_bb(attack_mask,magic_number) & U64(71776119061217280)) < 6:
                 continue
 
             used_attacks = [0 for i in range(4096)]
@@ -389,13 +397,14 @@ class Board:
             index = 0
             fail = False
             while index < occupancy_index and not fail:
-                magic_index = int((occupancies[i] * magic_number) >> U64(64-relevant_bits))
-
+                magic_index = int(Board.mult_bb(occupancies[index], magic_number) >> U64(64-relevant_bits))
+                # print("magic_index : %s"%magic_index)
                 if used_attacks[magic_index] == 0:
                     used_attacks[magic_index] = attacks[i]
                 # le magic number ne marche pas !
                 elif used_attacks[magic_index] != attacks[i]:
                     fail = True
+                index += 1
 
             if not fail:  # le nombre est bien un magic number !
                 return magic_number
