@@ -95,6 +95,8 @@ class Board:
         # self.bb_white = self.Pw | self.Kw | self.Qw | self.Bw | self.Rw | self.Nw
         # self.bb_black = self.Pb | self.Kb | self.Qb | self.Bb | self.Rb | self.Nb
         self.init_leaper_attack()
+        self.init_magic_numbers()
+        self.init_slider_attack()
 
     # fonctions sur les bits -----------------------------------------------------------------------
 
@@ -168,6 +170,7 @@ class Board:
     # INITIALISATION DES ATTAQUES ###########################################################################
 
     def init_leaper_attack(self):
+        """ génère les listes d'attaque possible de chaque pièces "sautante" """
         self.pawn_attack = [[], []]
         self.knight_attack = []
         for i in range(64):
@@ -181,6 +184,45 @@ class Board:
 
             #on initialise les attaques du roi
             self.knight_attack.append(self.mask_king_attack(i))
+    
+    def init_slider_attack(self):
+        """ génère les mouvements des pièces "glissantes" en fonction de leur position et de l'échequier """
+        self.bishop_mask = []
+        self.rook_mask = []
+        self.bishop_attacks = [[0 for _ in range(512)] for _ in range(64)]
+        self.rook_attacks = [[0 for _ in range(4096)] for _ in range(64)]
+        
+        for case in range(64):
+            # on initialise les masks
+            self.bishop_mask.append(self.mask_bishop_attack(case))
+            self.rook_mask.append(self.mask_rook_attack(case))
+            
+            
+            attack_mask1 = self.bishop_mask[case]
+            attack_mask2 = self.rook_mask[case]
+            
+            relevant_bits_count1 = self.count_bit(attack_mask1)
+            relevant_bits_count2 = self.count_bit(attack_mask2)
+            
+            for i in range(1<<relevant_bits_count1):
+                occupancy = self.set_occupancy(i, relevant_bits_count1, attack_mask1)
+                magic_index = ULL(occupancy * self.bishop_magic_numbers[case]) >> ULL(64-self.bishop_relevant_bits[case])
+                self.bishop_attacks[case][magic_index] = self.bishop_attack_on_the_fly(case,occupancy)
+            for i in range(1<<relevant_bits_count2):
+                occupancy = self.set_occupancy(i, relevant_bits_count2, attack_mask2)
+                magic_index = ULL(occupancy * self.rook_magic_numbers[case]) >> ULL(64-self.rook_relevant_bits[case])
+                self.rook_attacks[case][magic_index] = self.rook_attack_on_the_fly(case,occupancy)
+        
+
+    def get_bishop_attack(self,case,occ):
+        """ renvoi un bitboard de l'attaque du fou en fonction de l'occupance de l'échéquier """
+        occ = U64((occ & self.bishop_mask[case]) * self.bishop_magic_numbers[case]) >> U64(64-self.bishop_relevant_bits[case])
+        return occ
+    def get_rook_attack(self,case,occ):
+        """ renvoi un bitboard de l'attaque de la tour en fonction de l'occupance de l'échéquier """
+        occ = U64((occ & self.rook_mask[case]) * self.rook_magic_numbers[case]) >> U64(64-self.rook_relevant_bits[case])
+        return occ
+    
 
     # ATTAQUES DES PIECES ###############################################################################
 
@@ -385,11 +427,11 @@ class Board:
 
 
         # test de possible magic number
-        for i in range(100000000): #100000000
+        for i in range(10000000): #100000000
             magic_number = generate_magic_number()
 
             # on passe les mauvais magic number sûr
-            if self.count_bit(Board.mult_bb(attack_mask,magic_number) & U64(71776119061217280)) < 6:
+            if self.count_bit(ULL(attack_mask * magic_number) & ULL(71776119061217280)) < 6:
                 continue
 
             used_attacks = [0 for i in range(4096)]
@@ -397,7 +439,7 @@ class Board:
             index = 0
             fail = False
             while index < occupancy_index and not fail:
-                magic_index = int(Board.mult_bb(occupancies[index], magic_number) >> U64(64-relevant_bits))
+                magic_index = int(ULL(occupancies[index] * magic_number) >> ULL(64-relevant_bits))
                 # print("magic_index : %s"%magic_index)
                 if used_attacks[magic_index] == 0:
                     used_attacks[magic_index] = attacks[i]
@@ -415,6 +457,144 @@ class Board:
     def init_magic_numbers(self):
         """ initialise les magic numbers pour chaque pièces et chaque cases """
 
-        for case in range(64):
-            #magic number pour la tour
-            print(self.find_magic_number(case, self.rook_relevant_bits[case], False))
+        # for case in range(64):
+        #     #magic number pour le fou
+        #     print("%s,"%self.find_magic_number(case, self.bishop_relevant_bits[case], False))
+        # print('\n ------------------------- \n')
+        # for case in range(64):
+        #     #magic number pour la tour
+        #     print("%s,"%self.find_magic_number(case, self.rook_relevant_bits[case], True))
+        
+        self.bishop_magic_numbers = [
+            4620695624407842824,
+            140806216228864,
+            163330257714184192,
+            22517999751660288,
+            1874623482331926595,
+            18190328968511618,
+            563517262397968,
+            13872213851770454528,
+            44066365509898,
+            4503668951892306,
+            4611690597147902465,
+            463877440512,
+            360375933938959363,
+            7061662357662991616,
+            2310348807864320002,
+            2305845779467601024,
+            577164647146229888,
+            288232596662387200,
+            2463370104012804,
+            38281974510587088,
+            2252144502654080,
+            108376681453977665,
+            2305843601986306113,
+            18014415689351176,
+            150996104,
+            578748836068492312,
+            378302682236388098,
+            740987274239414272,
+            4611694814655957016,
+            2384691187896291864,
+            4506210987821064,
+            45045344538460394,
+            85854405529698640,
+            2463047780143616,
+            1143499240023168,
+            9009399570125056,
+            36108649051455488,
+            36030034372214788,
+            4504699240449288,
+            103080268288,
+            144138278356910210,
+            1152921573326323776,
+            4540436219707681,
+            4503599636484224,
+            28859990877929508,
+            2305985958611779616,
+            9403520420268744832,
+            4629700451569338945,
+            434601762087763972,
+            2252161734148128,
+            441354962509007168,
+            288230805648442376,
+            618444813536070432,
+            583216173353795586,
+            4615204601954697728,
+            370422177990180880,
+            148898050,
+            1134081098240,
+            11529223920562996096,
+            2613883287638640673,
+            1224979374135187456,
+            157907642323845256,
+            585468502421278732,
+            16006356077738233857
+            ]
+        
+        self.rook_magic_numbers = [
+            216735801088688156,
+            1729383530770726936,
+            7062780568500441138,
+            72640336010158336,
+            4530160779166080,
+            22588744838154304,
+            287763353608,
+            19241474457664,
+            18366324372213768,
+            123455622152706,
+            36028805844303873,
+            4644442342428706,
+            990669111951872,
+            1299314883997745160,
+            144117456225698816,
+            2598577538515484676,
+            18049584257335313,
+            3459333237283766277,
+            18612567598174240,
+            9224497949682171922,
+            4616207210777875200,
+            412422772737,
+            9232452356053012480,
+            4611862098132336708,
+            4935955093687123977,
+            576460924236333700,
+            1170953496380444673,
+            26978029568,
+            1442387733975697424,
+            18155153178043392,
+            157661190188306436,
+            144150510021115918,
+            288406341012422824,
+            9799848184481185792,
+            288230377762324483,
+            144115198846829696,
+            2254067623530560,
+            2306412874081763328,
+            18034192956792850,
+            582092450860892444,
+            4624289173147795472,
+            18102536071282688,
+            46180830674952,
+            2264993987297281,
+            9077808785678338,
+            11399736557330465,
+            92326060118510091,
+            9223372320603635714,
+            9007204088677893,
+            4400196640898,
+            9223372036859240992,
+            1739027172912071808,
+            9331459804491448576,
+            275146375347,
+            1165757477032320,
+            2305843568238985344,
+            4637053950708940811,
+            290482280151908576,
+            5872730197983279232,
+            17181707536,
+            91762511071150104,
+            23664263203,
+            3080532692140294208,
+            10277152635290112
+            ]
