@@ -97,6 +97,9 @@ class Board:
         self.init_leaper_attack()
         self.init_magic_numbers()
         self.init_slider_attack()
+        
+        # print(self.bishop_attacks)
+        
 
     # fonctions sur les bits -----------------------------------------------------------------------
 
@@ -158,6 +161,8 @@ class Board:
         return val
 
     def print_bb(self, bitboard):
+        """ U64 -> ()
+        affiche le bitboard sous une forme lisible """
         print("val : %s \n" % bitboard)
         for i in range(8):
             ligne = str(8-i)+"   "
@@ -169,6 +174,9 @@ class Board:
                 ligne += txt+" "
             print(ligne)
         print("\n    a b c d e f g h\n")
+    
+    # RENVOI AFFICHAGE ######################################################################################
+    
 
     # INITIALISATION DES ATTAQUES ###########################################################################
 
@@ -207,24 +215,30 @@ class Board:
             relevant_bits_count1 = self.count_bit(attack_mask1)
             relevant_bits_count2 = self.count_bit(attack_mask2)
             
+            
             for i in range(1<<relevant_bits_count1):
                 occupancy = self.set_occupancy(i, relevant_bits_count1, attack_mask1)
+                
                 magic_index = ULL(occupancy * self.bishop_magic_numbers[case]) >> ULL(64-self.bishop_relevant_bits[case])
+                
+                # print(magic_index)
                 self.bishop_attacks[case][magic_index] = self.bishop_attack_on_the_fly(case,occupancy)
             for i in range(1<<relevant_bits_count2):
                 occupancy = self.set_occupancy(i, relevant_bits_count2, attack_mask2)
+                
                 magic_index = ULL(occupancy * self.rook_magic_numbers[case]) >> ULL(64-self.rook_relevant_bits[case])
+                
                 self.rook_attacks[case][magic_index] = self.rook_attack_on_the_fly(case,occupancy)
         
 
     def get_bishop_attack(self,case,occ):
         """ renvoi un bitboard de l'attaque du fou en fonction de l'occupance de l'échéquier """
-        occ = U64((occ & self.bishop_mask[case]) * self.bishop_magic_numbers[case]) >> U64(64-self.bishop_relevant_bits[case])
-        return occ
+        bb = U64((occ & self.bishop_mask[case]) * self.bishop_magic_numbers[case]) >> U64(64-self.bishop_relevant_bits[case])
+        return self.bishop_attacks[case][bb]
     def get_rook_attack(self,case,occ):
         """ renvoi un bitboard de l'attaque de la tour en fonction de l'occupance de l'échéquier """
-        occ = U64((occ & self.rook_mask[case]) * self.rook_magic_numbers[case]) >> U64(64-self.rook_relevant_bits[case])
-        return occ
+        bb = U64((occ & self.rook_mask[case]) * self.rook_magic_numbers[case]) >> U64(64-self.rook_relevant_bits[case])
+        return self.rook_attacks[case][bb]
     
 
     # ATTAQUES DES PIECES ###############################################################################
@@ -407,8 +421,8 @@ class Board:
 
     def find_magic_number(self, square, relevant_bits, isbishop):
         """ génère un magic number correct par force brute"""
-        occupancies = [0 for i in range(4096)]
-        attacks = [0 for i in range(4096)]
+        occupancies = [0 for _ in range(4096)]
+        attacks = [0 for _ in range(4096)]
 
         attack_mask = U64(0)
         if isbishop:
@@ -437,7 +451,7 @@ class Board:
             if self.count_bit(ULL(attack_mask * magic_number) & ULL(18374686479671623680)) < 6:
                 continue
 
-            used_attacks = [0 for i in range(4096)]
+            used_attacks = [0 for _ in range(4096)]
 
             index = 0
             fail = False
@@ -457,6 +471,7 @@ class Board:
         print('magic number non trouvé !')
         return U64(0)
 
+    
     def init_magic_numbers(self):
         """ initialise les magic numbers pour chaque pièces et chaque cases """
 
