@@ -10,6 +10,7 @@ RANDOM NUMBER GENERATION
 import numpy as np
 U64 = np.uint64 #type utilise pour representer le bitboard (entier de 64 bit non signe)
 U32 = np.uint32 #(entier de 32 bit non signe)
+ULL = np.ulonglong
 
 random_state = U32(1804289383) #permet la génération aléatoire
 
