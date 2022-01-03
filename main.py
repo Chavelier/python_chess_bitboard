@@ -9,22 +9,17 @@ MAIN
 from board import *
 
 B = Board()
-# B.print_bb(B.pop_bit(B.Pw,51))
-case = B.case_str2int('c7')
-block = U64(0)
-block = B.set_bit(block, 5)
-block = B.set_bit(block, 13)
-block = B.set_bit(block, 34)
 
-atk_bb = B.mask_bishop_attack(B.case_str2int("e4"))
-# for i in range(4096):
-#     B.print_bb(B.set_occupancies(i,B.count_bit(atk_bb),atk_bb))
-#     txt = input()
-
-# v = U64(0)
-# for i in range(8):
-#         v = B.set_bit(v,i*8+6)
-# B.print_bb(B.not_ab_file)
+c = B.case_str2int
+occ = U64(0)
+occ = B.set_bit(occ, c("e4"))
+occ = B.set_bit(occ, c("e5"))
+occ = B.set_bit(occ, c("d4"))
+occ = B.set_bit(occ, c("d5"))
 
 
-B.init_magic_numbers()
+for case in range(64):
+    B.print_bb(B.get_rook_attack(case, occ))
+    a = input("...")
+    if a == "q":
+        break
