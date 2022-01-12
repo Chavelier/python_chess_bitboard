@@ -3,6 +3,8 @@
 Created on Mon Oct  12 09:22:34 2021
 
 @author: Corto Cristofoli
+@co-author : Jeunier Hugo
+@secret-author : Lance-Perlick Come
 
 BOARD
 """
@@ -76,18 +78,19 @@ class Board:
     piece_print = { "p" : "♙", "k" : "♔", "q" : "♕", "n" : "♘", "b" : "♗", "r" : "♖",
                        "P" : "♟︎", "K" : "♚", "Q" : "♛", "N" : "♞", "B" : "♝", "R" : "♜"}
     castle_side = { "wk" : 1, "wq" : 2, "bk" : 4, "bq" : 8}
-    
-    
+
+
     def __init__(self):
         self.init()
 
     def init(self):
 
         self.side = True  # False = noir, True = Blanc
-        
+
         self.bitboard = [
             U64(71776119061217280),
-            U64(2**60),U64(2**59),
+            U64(2**60),
+            U64(2**59),
             U64(2**58+2**61),
             U64(2**57+2**62),
             U64(2**56+2**63),
@@ -101,15 +104,15 @@ class Board:
         # ex : bitboard[piece["K"]] -> bitboard du roi blanc
 
         self.en_passant = -1 # case pour manger en passant, si =-1 pas de case
-        
+
         self.castle_right = int("0b1111",base = 2) #droits au roque
         # 0001 -> le roi blanc peut roquer à l'aile roi
         # 0010 -> le roi blanc peut roquer à l'aile dame
         # 0100 -> le roi noir peut roquer à l'aile roi
         # 1000 -> le roi noir peut roquer à l'aile dame
-        
-        
-        
+
+
+
         self.init_leaper_attack()
         self.init_magic_numbers()
         # self.init_slider_attack()
@@ -192,28 +195,34 @@ class Board:
         print("\n    a b c d e f g h\n")
 
     # RENVOI AFFICHAGE ######################################################################################
-    
-    def print_board(self):
+
+    def print_board(self,unicode=True):
         for x in range(8):
             ligne = str(8-x)+"   "
             for y in range(8):
                 case = x * 8 + y
-                
+
                 char = ""
                 for i in range(12):
                     if self.get_bit(self.bitboard[i],case):
-                        char += self.piece_print[self.piece[i]]
+                        if unicode:
+                            char += self.piece_print[self.piece[i]]
+                        else:
+                            char +=self.piece[i]
                 if char == "":
                     char = "."
                 ligne += char + " "
-                          
+
             print(ligne)
         print("\n    a b c d e f g h\n")
         if self.side:
             print("Trait : Blancs")
         else:
             print("Trait : Noirs")
-                
+        if self.en_passant != -1:
+            print("En passant : %s"%self.case_int2str(self.en_passant))
+        print("Droits au roque : %s"%bin(self.castle_right)[2:])
+
 
     # INITIALISATION DES ATTAQUES ###########################################################################
 

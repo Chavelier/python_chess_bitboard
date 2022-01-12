@@ -3,6 +3,8 @@
 Created on Mon Nov  8 09:58:52 2021
 
 @author: Corto Cristofoli
+@co-author : Jeunier Hugo
+@secret-author : Lance-Perlick Come
 
 RANDOM NUMBER GENERATION
 """
