@@ -32,16 +32,14 @@ class Board:
     ex: case E4 a comme id 36 et comme représentation en bitboard 2**36
     """
 
-    coord = [
-        'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8',
-        'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
-        'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
-        'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5',
-        'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4',
-        'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
-        'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
-        'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1'
-    ]
+    [   A8, B8, C8, D8, E8, F8, G8, H8,
+        A7, B7, C7, D7, E7, F7, G7, H7,
+        A6, B6, C6, D6, E6, F6, G6, H6,
+        A5, B5, C5, D5, E5, F5, G5, H5,
+        A4, B4, C4, D4, E4, F4, G4, H4,
+        A3, B3, C3, D3, E3, F3, G3, H3,
+        A2, B2, C2, D2, E2, F2, G2, H2,
+        A1, B1, C1, D1, E1, F1, G1, H1  ] = range(64)
 
     #constantes
     a_file = U64(72340172838076673)
@@ -110,14 +108,14 @@ class Board:
         # 0010 -> le roi blanc peut roquer à l'aile dame
         # 0100 -> le roi noir peut roquer à l'aile roi
         # 1000 -> le roi noir peut roquer à l'aile dame
-
+        
 
 
         self.init_leaper_attack()
         self.init_magic_numbers()
-        # self.init_slider_attack()
+        self.init_slider_attack()
+        
 
-        # print(self.bishop_attacks)
 
 
     # fonctions sur les bits -----------------------------------------------------------------------
@@ -170,14 +168,6 @@ class Board:
         return Board.count_bit((bitboard & -bitboard)-U64(1))
 
     # affichage / debug ------------------------------------------------------------------------------------
-
-    def case_str2int(self, txt):
-        val = self.coord.index(txt)
-        return val
-
-    def case_int2str(self, nb):
-        val = self.coord[nb]
-        return val
 
     def print_bb(self, bitboard):
         """ U64 -> ()
@@ -268,7 +258,7 @@ class Board:
 
                 magic_index = ULL(occupancy * self.bishop_magic_numbers[case]) >> ULL(64-relevant_bits_count1)
 
-                # print(magic_index)
+                print(case,magic_index)
                 self.bishop_attacks[case][magic_index] = self.bishop_attack_on_the_fly(case,occupancy)
             for i in range(1<<relevant_bits_count2):
                 occupancy = self.set_occupancy(i, relevant_bits_count2, attack_mask2)
@@ -286,6 +276,9 @@ class Board:
         """ renvoi un bitboard de l'attaque de la tour en fonction de l'occupance de l'échéquier """
         bb = U64((occ & self.rook_mask[case]) * self.rook_magic_numbers[case]) >> U64(64-self.rook_relevant_bits[case])
         return self.rook_attacks[case][bb]
+    def get_queen_attack(self,case,occ):
+        return self.get_bishop_attack(case,occ) | self.get_rook_attack(case, occ)
+        
 
 
     # ATTAQUES DES PIECES ###############################################################################
