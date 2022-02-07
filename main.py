@@ -12,19 +12,14 @@ from board import *
 
 B = Board()
 
-B.print_board(False)
-occ = U64(0)
-occ = B.set_bit(occ,B.E4)
-occ = B.set_bit(occ,B.D4)
-occ = B.set_bit(occ,B.E5)
-occ = B.set_bit(occ,B.D5)
-B.print_bb(occ)
+B.print_board(True)
+# occ = U64(0)
+# occ = B.set_bit(occ,B.E4)
+# occ = B.set_bit(occ,B.D4)
+# occ = B.set_bit(occ,B.E5)
+# occ = B.set_bit(occ,B.D5)
+# B.print_bb(occ)
 
-
-for case in range(64):
-    # B.print_bb(B.rook_attack_on_the_fly(case,occ))
-    B.print_bb(B.get_bishop_attack(case, occ))
-    a = input("...")
-    if a == "q":
-        break
-
+B.print_bb(B.attacked_bitboard(B.White))
+# B.print_bb(B.pawn_attack[1][B.C3])
+# B.print_bb(B.bitboard[B.P])
