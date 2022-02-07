@@ -50,6 +50,8 @@ class Board:
     not_h_file = ~h_file
     not_ab_file = ~(a_file | b_file)
     not_gh_file = ~(g_file | h_file)
+    
+    [White,Black] = [0,1]
 
     bishop_relevant_bits = [
         6, 5, 5, 5, 5, 5, 5, 6,
@@ -71,10 +73,11 @@ class Board:
         11, 10, 10, 10, 10, 10, 10, 11,
         12, 11, 11, 11, 11, 11, 11, 12
     ]
-
-    piece = ["P","K","Q","B","N","R","p","k","q","b","n","r"]
-    piece_print = { "p" : "♙", "k" : "♔", "q" : "♕", "n" : "♘", "b" : "♗", "r" : "♖",
-                       "P" : "♟︎", "K" : "♚", "Q" : "♛", "N" : "♞", "B" : "♝", "R" : "♜"}
+    
+    [P,K,Q,B,N,R,p,k,q,b,n,r] = range(12)
+    piece_letter = "PKQBNRpkqbnr"
+    piece_print = { p : "♙", k : "♔", q : "♕", n : "♘", b : "♗", r : "♖",
+                       P : "♟︎", K : "♚", Q : "♛", N : "♞", B : "♝", R : "♜"}
     castle_side = { "wk" : 1, "wq" : 2, "bk" : 4, "bq" : 8}
 
 
@@ -83,7 +86,7 @@ class Board:
 
     def init(self):
 
-        self.side = True  # False = noir, True = Blanc
+        self.side = self.White
 
         self.bitboard = [
             U64(71776119061217280),
@@ -99,8 +102,12 @@ class Board:
             U64(2**1+2**6),
             U64(2**0+2**7)
             ]
-        # ex : bitboard[piece["K"]] -> bitboard du roi blanc
-
+        self.occupancies = [U64(0),U64(0),U64(0)]
+        for i in range(6):
+            self.occupancies[0] |= self.bitboard[i]
+            self.occupancies[1] |= self.bitboard[i+6]
+        self.occupancies[2] = self.occupancies[0] | self.occupancies[1]
+        
         self.en_passant = -1 # case pour manger en passant, si =-1 pas de case
 
         self.castle_right = int("0b1111",base = 2) #droits au roque
@@ -113,7 +120,7 @@ class Board:
 
         self.init_leaper_attack()
         self.init_magic_numbers()
-        self.init_slider_attack()
+        # self.init_slider_attack()
         
 
 
@@ -196,9 +203,9 @@ class Board:
                 for i in range(12):
                     if self.get_bit(self.bitboard[i],case):
                         if unicode:
-                            char += self.piece_print[self.piece[i]]
+                            char += self.piece_print[i]
                         else:
-                            char +=self.piece[i]
+                            char +=self.piece_letter[i]
                 if char == "":
                     char = "."
                 ligne += char + " "
@@ -206,9 +213,9 @@ class Board:
             print(ligne)
         print("\n    a b c d e f g h\n")
         if self.side:
-            print("Trait : Blancs")
-        else:
             print("Trait : Noirs")
+        else:
+            print("Trait : Blancs")
         if self.en_passant != -1:
             print("En passant : %s"%self.case_int2str(self.en_passant))
         print("Droits au roque : %s"%bin(self.castle_right)[2:])
@@ -220,6 +227,7 @@ class Board:
         """ génère les listes d'attaque possible de chaque pièces "sautante" """
         self.pawn_attack = [[], []]
         self.knight_attack = []
+        self.king_attack = []
         for i in range(64):
 
             # on initialise les attaques de pion
@@ -230,7 +238,7 @@ class Board:
             self.knight_attack.append(self.mask_knight_attack(i))
 
             #on initialise les attaques du roi
-            self.knight_attack.append(self.mask_king_attack(i))
+            self.king_attack.append(self.mask_king_attack(i))
 
     def init_slider_attack(self):
         """ génère les mouvements des pièces "glissantes" en fonction de leur position et de l'échequier """
@@ -270,12 +278,14 @@ class Board:
 
     def get_bishop_attack(self,case,occ):
         """ renvoi un bitboard de l'attaque du fou en fonction de l'occupance de l'échéquier """
-        bb = U64((occ & self.bishop_mask[case]) * self.bishop_magic_numbers[case]) >> U64(64-self.bishop_relevant_bits[case])
-        return self.bishop_attacks[case][bb]
+        # bb = U64((occ & self.bishop_mask[case]) * self.bishop_magic_numbers[case]) >> U64(64-self.bishop_relevant_bits[case])
+        # return self.bishop_attacks[case][bb]
+        return self.bishop_attack_on_the_fly(case, occ)
     def get_rook_attack(self,case,occ):
         """ renvoi un bitboard de l'attaque de la tour en fonction de l'occupance de l'échéquier """
-        bb = U64((occ & self.rook_mask[case]) * self.rook_magic_numbers[case]) >> U64(64-self.rook_relevant_bits[case])
-        return self.rook_attacks[case][bb]
+        # bb = U64((occ & self.rook_mask[case]) * self.rook_magic_numbers[case]) >> U64(64-self.rook_relevant_bits[case])
+        # return self.rook_attacks[case][bb]
+        return self.rook_attack_on_the_fly(case, occ)
     def get_queen_attack(self,case,occ):
         return self.get_bishop_attack(case,occ) | self.get_rook_attack(case, occ)
         
@@ -440,6 +450,35 @@ class Board:
 
         return attack
 
+    # test si une case est attaquée #######################################################
+    
+    def square_is_attacked(self,case,side):
+        """ int, bool -> bool
+            renvoi vrai si la case est attaqué par le coté choisi """
+        if not side:
+            if (self.pawn_attack[self.Black][case] & self.bitboard[self.P]): return True
+            if (self.knight_attack[case] & self.bitboard[self.N]): return True
+            if (self.king_attack[case] & self.bitboard[self.K]): return True
+            if (self.get_bishop_attack(case, self.occupancies[2]) & (self.bitboard[self.B] | self.bitboard[self.Q])): return True
+            if (self.get_rook_attack(case, self.occupancies[2]) & (self.bitboard[self.R] | self.bitboard[self.Q])): return True
+            return False
+        else:
+            if (self.pawn_attack[self.White][case] & self.bitboard[self.p]): return True
+            if (self.knight_attack[case] & self.bitboard[self.n]): return True
+            if (self.king_attack[case] & self.bitboard[self.k]): return True
+            if (self.get_bishop_attack(case, self.occupancies[2]) & (self.bitboard[self.b] | self.bitboard[self.q])): return True
+            if (self.get_rook_attack(case, self.occupancies[2]) & (self.bitboard[self.r] | self.bitboard[self.q])): return True
+
+            return False
+
+    def attacked_bitboard(self,side):
+        bb = U64(0)
+        for i in range(8):
+            for j in range(8):
+                if self.square_is_attacked(8*i+j,side):
+                    bb = Board.set_bit(bb, 8*i+j)
+        return bb
+        
     # MAGIC NUMBER ####################################################################
 
     def set_occupancy(self, index, bits_in_mask, attack_mask):
