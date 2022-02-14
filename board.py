@@ -31,6 +31,16 @@ class Board:
 
     ex: case E4 a comme id 36 et comme représentation en bitboard 2**36
     """
+    CASES = [
+        "A8", "B8", "C8", "D8", "E8", "F8", "G8", "H8",
+        "A7", "B7", "C7", "D7", "E7", "F7", "G7", "H7",
+        "A6", "B6", "C6", "D6", "E6", "F6", "G6", "H6",
+        "A5", "B5", "C5", "D5", "E5", "F5", "G5", "H5",
+        "A4", "B4", "C4", "D4", "E4", "F4", "G4", "H4",
+        "A3", "B3", "C3", "D3", "E3", "F3", "G3", "H3",
+        "A2", "B2", "C2", "D2", "E2", "F2", "G2", "H2",
+        "A1", "B1", "C1", "D1", "E1", "F1", "G1", "H1"
+        ]
 
     [   A8, B8, C8, D8, E8, F8, G8, H8,
         A7, B7, C7, D7, E7, F7, G7, H7,
@@ -478,7 +488,67 @@ class Board:
                 if self.square_is_attacked(8*i+j,side):
                     bb = Board.set_bit(bb, 8*i+j)
         return bb
+     
+
+    # // GENERATION DES COUPS // #########################################################
+    
+    def move_generation(self,side):
+        """ génère les coups possibles du côté donné en argument """
         
+        move_list = [] #liste des pseudo coups possible : de la forme (depart,arrivé,promotion?)
+        
+        for piece in range(side*6,(side+1)*6): # on selectionne la bonne partie de bitboard en fonction du side
+            bb = self.bitboard[piece]
+            
+            if piece == self.P :
+                while bb:
+                    depart = self.ls1b_index(bb)
+                    bb = self.pop_bit(bb, depart) # on enlève la case de départ afin de regarder ensuite les suivantes
+                    
+                    # attaque de pion
+                    is_attacking = self.pawn_attack[0][depart] & self.occupancies[1]
+                    while is_attacking:
+                        arrivee = self.get_ls1b(is_attacking)
+                        if arrivee <= self.H8: #on mange et on promotionne
+                            move_list.append((depart,arrivee,"q"))
+                            move_list.append((depart,arrivee,"r"))
+                            move_list.append((depart,arrivee,"b"))
+                            move_list.append((depart,arrivee,"n"))
+                        else:
+                            move_list.append((depart,arrivee,""))
+                        
+                        is_attacking = self.is_attacking(is_attacking, arrivee)
+                    # prise en passant
+                    if self.en_passant != -1 and (self.pawn_attack[0][depart] & U64(1)<<U64(self.en_passant)):
+                        move_list.append((depart,self.en_passant,"")
+                    
+                    # coup de pion blanc discret
+                    arrivee = depart - 8
+                    if arrivee>= self.A8 and not self.get_bit(self.occupancies[2],arrivee):
+                        
+                        #promotion
+                        if arrivee <= self.H8: #le pion arrive sur la dernière rangée
+                            move_list.append((depart,arrivee,"q"))
+                            move_list.append((depart,arrivee,"r"))
+                            move_list.append((depart,arrivee,"b"))
+                            move_list.append((depart,arrivee,"n"))
+                        else:
+                            # avancée de 2 cases
+                            if (self.A2 <= depart <= self.H2) and not self.get_bit(self.occupancies[2],arrivee-8):
+                                move_list.append((depart,arrivee-8,""))
+                            move_list.append((depart,arrivee,""))
+        return move_list
+                            
+            
+    def print_move(self,side):
+        liste = self.move_generation(side)
+        for (a,b,c) in liste:
+            if c != "":
+                print("{0} -> {1} , promotion : {2}".format(self.CASES[a],self.CASES[b],c))
+            else:
+                print("{0} -> {1}".format(self.CASES[a],self.CASES[b]))
+        
+    
     # MAGIC NUMBER ####################################################################
 
     def set_occupancy(self, index, bits_in_mask, attack_mask):
